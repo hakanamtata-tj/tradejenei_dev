@@ -1,0 +1,35 @@
+# Python cache and virtual envs
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+
+# IDE and OS files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Runtime artifacts
+log/
+*.log
+nohup.out
+
+# Local secrets and credentials
+*_access_token.json
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Large/generated market data
+instruments.csv
+nifty_instruments.csv
+
+# Local backups
+*_localcopy*.py
