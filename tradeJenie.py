@@ -366,7 +366,7 @@ def _monitor_nh_position_until_next_candle(
                     trade, position, close, ts, config, user, key
                 )
 
-                msg = f"⏰ {key} | {user['user']} {SERVER} |  Intraday exit triggered at 3:15 PM. Exited {trade['OptionSymbol']} at ₹{trade.get('OptionBuyPrice',0):.2f} | PnL: ₹{trade.get('PnL',0):.2f}"
+                msg = f"⏰ {key} | {user['user']} {SERVER} |  Intraday exit triggered at 3:15 PM. Exited Main {trade['OptionSymbol']} at ₹{trade.get('OptionBuyPrice',0):.2f} | PnL: ₹{trade.get('PnL',0):.2f}"
 
                 print(msg)
                 logging.info(msg)
@@ -436,8 +436,8 @@ def _monitor_nh_position_until_next_candle(
 
                     send_telegram_message(
                         f"📤 Exit {trade['Signal']}\n"
-                        f"{trade['OptionSymbol']} @ ₹{avg_price:.2f} | "
-                        f"PnL ₹{trade['total_pnl']:.2f}",
+                        f"Main {trade['OptionSymbol']} @ ₹{avg_price:.2f} | "
+                        f"PnL Per Qty ₹{trade['total_pnl']:.2f}",
                         user['telegram_chat_id'],
                         user['telegram_token']
                     )
@@ -523,7 +523,7 @@ def _monitor_nh_position_until_next_candle(
                 # VALIDATION (UNCHANGED)
                 # -------------------------------
                 if not is_valid_trade_data(new_qty, avg_price, hedge_avg, hedge_required=False):
-                    err_msg = f"⚠️ {key} | FAILED ENTRY:{opt_symbol}  Qty ({new_qty}) or Price ({avg_price}) is 0 for {opt_symbol}. db NOT updated."
+                    err_msg = f"⚠️ {key} | FAILED ENTRY:Main {opt_symbol}  Qty ({new_qty}) or Price ({avg_price}) is 0 for {opt_symbol}. db NOT updated."
                     print(err_msg)
                     logging.error(err_msg)
                     send_telegram_message_admin(err_msg)
@@ -559,7 +559,7 @@ def _monitor_nh_position_until_next_candle(
 
                     send_telegram_message(
                         f"🔁 {key} | Reentry {signal}\n"
-                        f"{opt_symbol} | Avg ₹{avg_price:.2f} | Qty {new_qty}",
+                        f"Main {opt_symbol} | Avg ₹{avg_price:.2f} | Qty {new_qty}",
                         user['telegram_chat_id'],
                         user['telegram_token']
                     )
@@ -622,7 +622,7 @@ def _monitor_hedged_position_until_next_candle(
                 logging.info(f"📤{key} | StopLoss Exit executed for {trade['OptionSymbol']} with Avg price: ₹{avg_price:.2f} | Qty: {exit_qty} And {trade['hedge_option_symbol']} with Avg price: ₹{hedge_avg_price:.2f} | Qty: {exit_qty}" )
 
                 if not is_valid_trade_data(exit_qty, avg_price, hedge_avg_price, hedge_required=True):
-                    err_msg = f"⚠️ {key} | StopLoss Exit FAILED : Qty ({exit_qty}) or Price ({avg_price}) or ({hedge_avg_price}) is 0 for {trade['OptionSymbol']} or {trade['hedge_option_symbol']} . DB NOT updated."
+                    err_msg = f"⚠️ {key} | StopLoss Exit FAILED : Qty ({exit_qty}) or Price ({avg_price}) or Fence Price ({hedge_avg_price}) is 0 for {trade['OptionSymbol']} or {trade['hedge_option_symbol']} . DB NOT updated."
                     logging.error(err_msg)
                     send_telegram_message_admin(err_msg)
                     update_trade_config_on_failure(config['KEY'], err_msg, user)
@@ -649,9 +649,9 @@ def _monitor_hedged_position_until_next_candle(
                     
                     # NOTIFY
                     msg = (f"📤 {user['user']} {SERVER} | {key} | StopLoss Exit {trade['Signal']}\n"
-                        f"{trade['OptionSymbol']} @ ₹{avg_price:.2f}\n"
-                        f"Hedge: {trade['hedge_option_symbol']} @ ₹{hedge_avg_price:.2f}\n"
-                        f"Total PnL/Qty: ₹{trade['total_pnl']:.2f}")
+                        f"Main {trade['OptionSymbol']} @ ₹{avg_price:.2f}\n"
+                        f"Fence : {trade['hedge_option_symbol']} @ ₹{hedge_avg_price:.2f}\n"
+                        f"Total PnL Per Qty: ₹{trade['total_pnl']:.2f}")
                     send_telegram_message(msg, user['telegram_chat_id'], user['telegram_token'])
                     
                     logging.info(msg)
@@ -684,7 +684,7 @@ def _monitor_hedged_position_until_next_candle(
                         user, 
                         expiry_match="DIFF"
                     )
-
+                    print(f"📤{key} | Exited from {trade['OptionSymbol']} with Avg price: ₹{avg_price:.2f} | Qty: {exit_qty} And {trade['hedge_option_symbol']} with Avg price: ₹{hedge_avg_price:.2f} | Qty: {exit_qty}" )
                     logging.info(f"📤{key} | Exited from {trade['OptionSymbol']} with Avg price: ₹{avg_price:.2f} | Qty: {exit_qty} And {trade['hedge_option_symbol']} with Avg price: ₹{hedge_avg_price:.2f} | Qty: {exit_qty}" )
 
                     if not is_valid_trade_data(exit_qty, avg_price, hedge_avg_price, hedge_required=True):
@@ -718,9 +718,9 @@ def _monitor_hedged_position_until_next_candle(
                         # NOTIFICATIONS
                         send_telegram_message(
                             f"📤 {key}  | {user['user']} {SERVER}  |  Rollover Exit {trade['Signal']}\n"
-                            f"{trade['OptionSymbol']} @ ₹{avg_price:.2f}. "
-                            f"Hedge Symbol {trade['hedge_option_symbol']} | @ ₹{hedge_avg_price:.2f} | "
-                            f"Total Profit/Qty: {trade['total_pnl']:.2f}",
+                            f"Main {trade['OptionSymbol']} @ ₹{avg_price:.2f}. "
+                            f"Fence {trade['hedge_option_symbol']} | @ ₹{hedge_avg_price:.2f} | "
+                            f"Total Profit Per Qty: {trade['total_pnl']:.2f}",
                             user['telegram_chat_id'], user['telegram_token']
                         )
                         print(f"🔴 {key} | {user['user']} {SERVER} | Target finalized for {trade['OptionSymbol']} at ₹{avg_price:.2f} | Hedge Symbol {trade['hedge_option_symbol']} | @ ₹{hedge_avg_price:.2f} | Total Profit/Qty: {trade['total_pnl']:.2f}")
@@ -843,7 +843,14 @@ def _monitor_hedged_position_until_next_candle(
                                     hedge_opt_symbol = hedge_result[0]
                                     # Using strike and ltp from result indices as per your function return
                                     h_ltp_val = hedge_result[3] 
-                            
+                                    h_strike = hedge_result[1] 
+                            else:
+                                #for hedge_type M200 and M100 if expiry is not matching or hedge type is full
+                                h_strike = strike + ((200 if config.get('HEDGE_TYPE') == "H-M200" else 100) * (-1 if signal == "BUY" else 1))     
+                        else:
+                            #when expiry is same and hedge type is semi
+                            h_strike = hedge_strike
+                    
                         # Note: M100/M200 hedge_opt_symbol is already populated from the first search result[4]
 
                         # 4. PREPARE FOR ENTRY
@@ -876,7 +883,7 @@ def _monitor_hedged_position_until_next_candle(
                                 "qty": new_qty, "interval": config['INTERVAL'], "real_trade": config['REAL_TRADE'],
                                 "EntryReason": "ROLLOVER_REENTRY", "Key": key,
                                 "hedge_option_symbol": hedge_opt_symbol,
-                                "hedge_strike": strike + ((200 if config.get('HEDGE_TYPE') == "H-M200" else 100) * (-1 if signal == "BUY" else 1)), 
+                                "hedge_strike": h_strike, 
                                 "hedge_option_buy_price": hedge_avg_price,
                                 "hedge_qty": new_qty if hedge_avg_price > 0 else "-",
                                 "hedge_entry_time": current_time if hedge_avg_price > 0 else "-"
@@ -903,8 +910,6 @@ def _handle_hedged_buy_signal(trade, position, latest, close, current_time, conf
         # 1. PRE-EXIT PREPARATION
         # Extract existing quantities and settings
         existing_qty = int(trade.get("qty", config['QTY']))
-        target_qty_new = int(config.get('QTY', existing_qty))
-        hr_type = str(config.get('HEDGE_ROLLOVER_TYPE', 'FULL')).upper()
 
         print(f"📥 {key} |  {user['user']} {SERVER} | Exiting  {trade['OptionSymbol']} | {trade['hedge_option_symbol']} | Qty: {existing_qty}" )
         logging.info(f"📥 {key} |  {user['user']} {SERVER} | Exiting  {trade['OptionSymbol']} | {trade['hedge_option_symbol']} | Qty: {existing_qty}" )
@@ -913,7 +918,7 @@ def _handle_hedged_buy_signal(trade, position, latest, close, current_time, conf
         # This function handles NH/SEMI/FULL and Qty Changes internally.
         # It will KILL the thread if a mismatch or partial fill occurs.
         exit_qty, avg_price, hedge_avg_price = execute_robust_exit( trade, config, user)
-        
+        print(f"📤{key} | Exited from {trade['OptionSymbol']} with Avg price: ₹{avg_price:.2f} | Qty: {exit_qty} And {trade['hedge_option_symbol']} with Avg price: ₹{hedge_avg_price:.2f} | Qty: {exit_qty}" )
         logging.info(f"📤{key} | Exited from {trade['OptionSymbol']} with Avg price: ₹{avg_price:.2f} | Qty: {exit_qty} And {trade['hedge_option_symbol']} with Avg price: ₹{hedge_avg_price:.2f} | Qty: {exit_qty}" )
 
         if not is_valid_trade_data(exit_qty, avg_price, hedge_avg_price, hedge_required=True):
@@ -939,24 +944,27 @@ def _handle_hedged_buy_signal(trade, position, latest, close, current_time, conf
             # Calculate Total PnL (Main + Hedge)
             trade["total_pnl"] = trade["PnL"] + trade.get("hedge_pnl", 0)
 
-            logging.info(f"📥 {key} | SELL Signal Generated | Exit Successful | Main Avg: {avg_price} | Hedge Avg: {hedge_avg_price} | Qty: {exit_qty}")
-            
+            logging.info(f"📥 {key} |{user['user']} {SERVER} | Signal Exit Success | {trade['OptionSymbol']} of M_Avg: {avg_price} | {trade['hedge_option_symbol']} of H_Avg: {hedge_avg_price}")
             trade = get_clean_trade(trade)
             record_trade(trade, config, user['id'])
             delete_open_position(trade["OptionSymbol"], config, trade, user['id'])
             
             # 4. NOTIFY
-            msg = (f"📤{key} | {user['user']} {SERVER} | Exit SELL Signal Generated.\n"
-                f"{trade['OptionSymbol']} @ ₹{avg_price:.2f}\n"
-                f"Hedge: {trade['hedge_option_symbol']} @ ₹{hedge_avg_price:.2f}\n"
-                f"Profit/Qty: ₹{trade['total_pnl']:.2f}")
-            send_telegram_message(msg, user['telegram_chat_id'], user['telegram_token'])
+            msg = (f"📤{key} | {user['user']} {SERVER} |  Exit Signal Generated\n"
+                f"Main {trade['OptionSymbol']} @ ₹{avg_price:.2f}\n"
+                f"Fence {trade['hedge_option_symbol']} @ ₹{hedge_avg_price:.2f}\n"
+                f"Total PnL Per Qty: ₹{trade['total_pnl']:.2f}")
+            
+            logging.info(msg)
+            send_telegram_message(msg, user['telegram_chat_id'], user['telegram_token']) 
     # EXIT CODE EXECUTION :: END
     if _should_stop_before_new_entry(
         config,
         user,
         f"🚫{key} | {user['user']} | {SERVER} | No new trades allowed. Skipping BUY signal.",
-        f"{key} | {user['user']} | {SERVER} | No new trades allowed. Skipping BUY signal."
+        f"{key} | {user['user']} | {SERVER} | No new trades allowed. Skipping BUY signal.",
+        f"🚫 {user['user']} | {key} | Monthly StopLoss hit. No new trades allowed for the rest of the month.",
+        f"🚫 {user['user']} | {key} | Monthly StopLoss hit. No new trades allowed for the rest of the month."
     ):
         return trade, position, "break", True
 
@@ -1139,9 +1147,9 @@ def _handle_hedged_sell_signal(trade, position, latest, close, current_time, con
             
             # 4. NOTIFY
             msg = (f"📤{key} | {user['user']} {SERVER} |  Exit Signal Generated\n"
-                f"{trade['OptionSymbol']} @ ₹{avg_price:.2f}\n"
-                f"{trade['hedge_option_symbol']} @ ₹{hedge_avg_price:.2f}\n"
-                f"Total PnL/Qty: ₹{trade['total_pnl']:.2f}")
+                f"Main {trade['OptionSymbol']} @ ₹{avg_price:.2f}\n"
+                f"Fence {trade['hedge_option_symbol']} @ ₹{hedge_avg_price:.2f}\n"
+                f"Total PnL Per Qty: ₹{trade['total_pnl']:.2f}")
             
             logging.info(msg)
             send_telegram_message(msg, user['telegram_chat_id'], user['telegram_token']) 
@@ -1151,7 +1159,9 @@ def _handle_hedged_sell_signal(trade, position, latest, close, current_time, con
         config,
         user,
         f"🚫  {key}  | {user['user']} {SERVER}  |  No new trades allowed. Skipping SELL signal.",
-        f"🚫 {key} | {user['user']} {SERVER}  | No new trades allowed. Skipping SELL signal."
+        f"🚫 {key} | {user['user']} {SERVER}  | No new trades allowed. Skipping SELL signal.",
+        f"🚫 {user['user']} | {key} | Monthly StopLoss hit. No new trades allowed for the rest of the month.",
+        f"🚫 {user['user']} | {key} | Monthly StopLoss hit. No new trades allowed for the rest of the month."
     ):
         return trade, position, "break", True
 
@@ -1360,6 +1370,11 @@ def _handle_nh_buy_signal(trade, position, latest, close, current_time, config, 
     if not result or result[0] is None:
         print(f"❌{key} | {user['user']} {SERVER} | No suitable option found for BUY signal.")
         logging.error(f"❌{key} | {user['user']} {SERVER} | No suitable option found for BUY signal.")
+        send_telegram_message(
+            f"❌ {key} | {user['user']} {SERVER} | No suitable option found for BUY signal.",
+            user['telegram_chat_id'],
+            user['telegram_token']
+        )
         return trade, position, "continue", True
 
     opt_symbol, strike, expiry, ltp, _ = result
@@ -1474,7 +1489,9 @@ def _handle_nh_sell_signal(trade, position, latest, close, current_time, config,
         config,
         user,
         f"🚫 {key} | {user['user']} | No new trades allowed. Skipping SELL signal.",
-        f"🚫 {key} | {user['user']} | No new trades allowed. Skipping SELL signal."
+        f"🚫 {key} | {user['user']} | No new trades allowed. Skipping SELL signal.",
+        f"🚫 {user['user']} | {key} | Monthly StopLoss hit. No new trades allowed for the rest of the month.",
+        f"🚫 {user['user']} | {key} | Monthly StopLoss hit. No new trades allowed for the rest of the month."
     ):
         return trade, position, "break", True
 
