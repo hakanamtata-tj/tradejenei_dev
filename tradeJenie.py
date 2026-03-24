@@ -1387,36 +1387,36 @@ def _handle_nh_buy_signal(trade, position, latest, close, current_time, config, 
         logging.error(err_msg)
         send_telegram_message_admin(err_msg)
         return trade, position, "break", True
+    else:
+        trade = _build_signal_entry_trade(
+            signal="BUY",
+            close=close,
+            opt_symbol=opt_symbol,
+            strike=strike,
+            expiry=expiry,
+            avg_price=avg_price,
+            current_time=current_time,
+            qty=new_qty,
+            config=config,
+            key=key,
+            hedge_option_symbol=temp_trade_symbols["hedge_option_symbol"],
+            hedge_strike="-",
+            hedge_avg_price=hedge_avg_price
+        )
 
-    trade = _build_signal_entry_trade(
-        signal="BUY",
-        close=close,
-        opt_symbol=opt_symbol,
-        strike=strike,
-        expiry=expiry,
-        avg_price=avg_price,
-        current_time=current_time,
-        qty=new_qty,
-        config=config,
-        key=key,
-        hedge_option_symbol=temp_trade_symbols["hedge_option_symbol"],
-        hedge_strike="-",
-        hedge_avg_price=hedge_avg_price
-    )
+        trade = get_clean_trade(trade)
+        save_open_position(trade, config, user['id'])
 
-    trade = get_clean_trade(trade)
-    save_open_position(trade, config, user['id'])
+        position = "BUY"
+        print(f"✅ {key} | {user['user']} {SERVER} | BUY Entry Signal Executed: Sold {opt_symbol} | Avg Price: ₹{avg_price:.2f} | Qty: {new_qty}")
+        logging.info(f"✅ {key} | {user['user']} {SERVER} | BUY Entry Signal Executed: Sold {opt_symbol} | Avg Price: ₹{avg_price:.2f} | Qty: {new_qty}")
+        send_telegram_message(
+            f"🟢{key} | BUY Entry Signal Generated\n Selling {opt_symbol} | Avg ₹{avg_price:.2f} | Qty: {new_qty}",
+            user['telegram_chat_id'],
+            user['telegram_token']
+        )
 
-    position = "BUY"
-    print(f"✅ {key} | {user['user']} {SERVER} | BUY Entry Signal Executed: Sold {opt_symbol} | Avg Price: ₹{avg_price:.2f} | Qty: {new_qty}")
-    logging.info(f"✅ {key} | {user['user']} {SERVER} | BUY Entry Signal Executed: Sold {opt_symbol} | Avg Price: ₹{avg_price:.2f} | Qty: {new_qty}")
-    send_telegram_message(
-        f"🟢{key} | BUY Entry Signal Generated\n Selling {opt_symbol} | Avg ₹{avg_price:.2f} | Qty: {new_qty}",
-        user['telegram_chat_id'],
-        user['telegram_token']
-    )
-
-    return trade, position, "none", True
+        return trade, position, "none", True
 
 
 def _handle_nh_sell_signal(trade, position, latest, close, current_time, config, user, key, instruments_df):
@@ -1528,37 +1528,37 @@ def _handle_nh_sell_signal(trade, position, latest, close, current_time, config,
         logging.error(err_msg)
         send_telegram_message_admin(err_msg)
         return trade, position, "break", True
+    else:
+        trade = _build_signal_entry_trade(
+            signal="SELL",
+            close=close,
+            opt_symbol=opt_symbol,
+            strike=strike,
+            expiry=expiry,
+            avg_price=avg_price,
+            current_time=current_time,
+            qty=new_qty,
+            config=config,
+            key=key,
+            hedge_option_symbol=temp_trade_symbols["hedge_option_symbol"],
+            hedge_strike="-",
+            hedge_avg_price=hedge_avg_price
+        )
 
-    trade = _build_signal_entry_trade(
-        signal="SELL",
-        close=close,
-        opt_symbol=opt_symbol,
-        strike=strike,
-        expiry=expiry,
-        avg_price=avg_price,
-        current_time=current_time,
-        qty=new_qty,
-        config=config,
-        key=key,
-        hedge_option_symbol=temp_trade_symbols["hedge_option_symbol"],
-        hedge_strike="-",
-        hedge_avg_price=hedge_avg_price
-    )
+        trade = get_clean_trade(trade)
+        save_open_position(trade, config, user['id'])
 
-    trade = get_clean_trade(trade)
-    save_open_position(trade, config, user['id'])
+        position = "SELL"
+        send_telegram_message(
+            f"🔴{key} | SELL Enter Signal Generated\n"
+            f" Sell {opt_symbol} | Avg ₹{avg_price:.2f} | Qty: {new_qty}",
+            user['telegram_chat_id'],
+            user['telegram_token']
+        )
+        print(f"🔴{key} | SELL Enter Signal Generated |  Sell {opt_symbol} | Avg ₹{avg_price:.2f} | Qty: {new_qty}")
+        logging.info(f"🔴{key} | SELL Enter Signal Generated |  Sell {opt_symbol} | Avg ₹{avg_price:.2f} | Qty: {new_qty}")
 
-    position = "SELL"
-    send_telegram_message(
-        f"🔴{key} | SELL Enter Signal Generated\n"
-        f" Sell {opt_symbol} | Avg ₹{avg_price:.2f} | Qty: {new_qty}",
-        user['telegram_chat_id'],
-        user['telegram_token']
-    )
-    print(f"🔴{key} | SELL Enter Signal Generated |  Sell {opt_symbol} | Avg ₹{avg_price:.2f} | Qty: {new_qty}")
-    logging.info(f"🔴{key} | SELL Enter Signal Generated |  Sell {opt_symbol} | Avg ₹{avg_price:.2f} | Qty: {new_qty}")
-
-    return trade, position, "none", True
+        return trade, position, "none", True
 
 
 def _apply_strategy(df, strategy):
