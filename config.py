@@ -17,8 +17,8 @@ LOG_FILE = f"E:/NonChakApps/Apps/Jenie/tradeJenie/dev/tradeJenie/log/live_tradin
 DB_FILE = "E:/NonChakApps/Apps/Jenie/tradeJenie/dev/tradeJenie/Trading.db"
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
 
-#SERVER = "LOCAL - HEDGE"
-SERVER = "GCP - UAT"  # PROD or TEST
+SERVER = "LOCAL - PMK"
+# SERVER = "GCP - UAT"  # PROD or TEST
 
 HEDGE_NEAREST_LTP = 10  # Nearest strike price for hedge option
 HEDGE_STRIKE_DIFF = 100  # Nearest strike price for hedge option

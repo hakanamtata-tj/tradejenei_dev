@@ -287,6 +287,21 @@ def _find_offset_hedge_with_retry(signal, close, instruments_df, config, user, k
 
     return hedge_result
 
+def _find_main_withhedge_with_retry(signal, close, instruments_df, config, user, key, strike, expiry, h_offset):
+    result = (None, None, None, None, None)
+    for attempt in range(3):
+        # Search for the fixed offset CE Hedge strike (+ h_offset)
+        result = get_robust_optimal_option(
+            signal=signal,
+            spot=close,
+            nearest_price=config['NEAREST_LTP'],  # Fixed offset search
+            instruments_df=instruments_df,
+            config=config,
+            user=user,
+            hedge_offset=h_offset,
+            hedge_required=True
+        )
+    return result
 
 def _handle_hedged_option_search_failure(result, hedge_result, h_required, signal, key, user, config):
     if result[0] is None or (h_required and (hedge_result is None or hedge_result[0] is None)):
@@ -977,31 +992,33 @@ def _handle_hedged_buy_signal(trade, position, latest, close, current_time, conf
         result = (None, None, None, None, None)
         hedge_result = (None, None, None, None, None)
 
-        # 1. FIND MAIN OPTION (BUY)
-        # We use hedge_required=False to find the Main CE first
-        result = _find_option_with_retry(
-            search_fn=lambda: get_robust_optimal_option(
-                signal="BUY",
-                spot=close,
-                nearest_price=config['NEAREST_LTP'],
-                instruments_df=instruments_df,
-                config=config,
-                user=user,
-                hedge_required=False
-            ),
-            max_attempts=3,
-            retry_print_msg=f"⚠️ {key}  | {user['user']} {SERVER} | Search Attempt {{attempt}} failed to find an option within tolerance. Retrying in 2s...",
-            retry_log_msg=f"⚠️{key}  |  Search Attempt {{attempt}} failed to find an option within tolerance. Retrying in 2s..."
-        )
 
-        opt_symbol, strike, expiry, ltp, _ = result
-        print(f"📤 {key}  | {user['user']} {SERVER} | Signal Generated for Entry : Optimal option {opt_symbol} at LTP {ltp}")
-        logging.info(f"📤 {key} | {user['user']} {SERVER} | Signal Generated for Entry : Optimal option {opt_symbol} at LTP {ltp}")
+
+        # opt_symbol, strike, expiry, ltp, _ = result
+        # print(f"📤 {key}  | {user['user']} {SERVER} | Signal Generated for Entry : Optimal option {opt_symbol} at LTP {ltp}")
+        # logging.info(f"📤 {key} | {user['user']} {SERVER} | Signal Generated for Entry : Optimal option {opt_symbol} at LTP {ltp}")
         
-        # 2. FIND HEDGE OPTION (BUY)
+        
         if opt_symbol is not None and h_required:
             # CASE A: Price-based Hedge (H-P10)
             if h_type == "H-P10":
+                # 1. FIND MAIN OPTION (BUY)
+                # We use hedge_required=False to find the Main CE first
+                result = _find_option_with_retry(
+                    search_fn=lambda: get_robust_optimal_option(
+                        signal="BUY",
+                        spot=close,
+                        nearest_price=config['NEAREST_LTP'],
+                        instruments_df=instruments_df,
+                        config=config,
+                        user=user,
+                        hedge_required=False
+                    ),
+                    max_attempts=3,
+                    retry_print_msg=f"⚠️ {key}  | {user['user']} {SERVER} | Search Attempt {{attempt}} failed to find an option within tolerance. Retrying in 2s...",
+                    retry_log_msg=f"⚠️{key}  |  Search Attempt {{attempt}} failed to find an option within tolerance. Retrying in 2s..."
+                )
+                # 2. FIND HEDGE OPTION (BUY)
                 hedge_result = _find_price_based_hedge_with_retry(
                     signal="BUY",
                     close=close,
@@ -1013,8 +1030,9 @@ def _handle_hedged_buy_signal(trade, position, latest, close, current_time, conf
                     
             # CASE B: Offset-based Hedge (H-M100 / H-M200)
             elif h_type in ["H-M100", "H-M200"]:
-                hedge_result = _find_offset_hedge_with_retry(
-                    signal="BUY",
+                signal="BUY"
+                result = _find_main_withhedge_with_retry(
+                    signal=signal,
                     close=close,
                     instruments_df=instruments_df,
                     config=config,
@@ -1024,11 +1042,12 @@ def _handle_hedged_buy_signal(trade, position, latest, close, current_time, conf
                     expiry=expiry,
                     h_offset=h_offset
                 )
-
+                hedge_opt_symbol = result[4]
+                hedge_strike = strike + ((200 if config.get('HEDGE_TYPE') is "H-M200" else 100) * (-1 if signal is"BUY" else 1))
         # 3. VALIDATION & ERROR HANDLING
         if _handle_hedged_option_search_failure(
             result=result,
-            hedge_result=hedge_result,
+            hedge_result = hedge_opt_symbol if hedge_result is None else hedge_result,
             h_required=h_required,
             signal="BUY",
             key=key,
@@ -1040,7 +1059,7 @@ def _handle_hedged_buy_signal(trade, position, latest, close, current_time, conf
         else:
             # 4. EXECUTION
             opt_symbol, strike, expiry, ltp, _ = result
-            hedge_opt_symbol, hedge_strike, hedge_expiry, hedge_ltp, _ = hedge_result if hedge_result else (None, None, None, 0, None)
+            hedge_opt_symbol, hedge_strike, hedge_expiry, hedge_ltp, _ = hedge_result if hedge_result else (hedge_opt_symbol, hedge_strike, expiry, 0, None)
 
             temp_trade_symbols = {
                 "OptionSymbol": opt_symbol,
@@ -1174,31 +1193,33 @@ def _handle_hedged_sell_signal(trade, position, latest, close, current_time, con
         result = (None, None, None, None, None)
         hedge_result = (None, None, None, None, None)
 
-        # 1. FIND MAIN OPTION (SELL)
-        # We use hedge_required=False to find the Main CE first
-        result = _find_option_with_retry(
-            search_fn=lambda: get_robust_optimal_option(
-                signal="SELL",
-                spot=close,
-                nearest_price=config['NEAREST_LTP'],
-                instruments_df=instruments_df,
-                config=config,
-                user=user,
-                hedge_required=False
-            ),
-            max_attempts=3,
-            retry_print_msg=f"⚠️ {key}  | {user['user']} {SERVER} | Search Attempt {{attempt}} failed to find an option within tolerance. Retrying in 2s...",
-            retry_log_msg=f"⚠️{key}  |  Search Attempt {{attempt}} failed to find an option within tolerance. Retrying in 2s..."
-        )
-
-        opt_symbol, strike, expiry, ltp, _ = result
-        print(f"📤 {key}  | {user['user']} {SERVER} | Signal Generated for Entry : Optimal option {opt_symbol} at LTP {ltp}")
-        logging.info(f"📤 {key} | {user['user']} {SERVER} | Signal Generated for Entry : Optimal option {opt_symbol} at LTP {ltp}")
         
-        # 2. FIND HEDGE OPTION (SELL)
+
+        # opt_symbol, strike, expiry, ltp, _ = result
+        # print(f"📤 {key}  | {user['user']} {SERVER} | Signal Generated for Entry : Optimal option {opt_symbol} at LTP {ltp}")
+        # logging.info(f"📤 {key} | {user['user']} {SERVER} | Signal Generated for Entry : Optimal option {opt_symbol} at LTP {ltp}")
+        
+        
         if opt_symbol is not None and h_required:
             # CASE A: Price-based Hedge (H-P10)
             if h_type == "H-P10":
+                # 1. FIND MAIN OPTION (SELL)
+                # We use hedge_required=False to find the Main CE first
+                result = _find_option_with_retry(
+                    search_fn=lambda: get_robust_optimal_option(
+                        signal="SELL",
+                        spot=close,
+                        nearest_price=config['NEAREST_LTP'],
+                        instruments_df=instruments_df,
+                        config=config,
+                        user=user,
+                        hedge_required=False
+                    ),
+                    max_attempts=3,
+                    retry_print_msg=f"⚠️ {key}  | {user['user']} {SERVER} | Search Attempt {{attempt}} failed to find an option within tolerance. Retrying in 2s...",
+                    retry_log_msg=f"⚠️{key}  |  Search Attempt {{attempt}} failed to find an option within tolerance. Retrying in 2s..."
+                )
+                # 2. FIND HEDGE OPTION (SELL)
                 hedge_result = _find_price_based_hedge_with_retry(
                     signal="SELL",
                     close=close,
@@ -1210,7 +1231,8 @@ def _handle_hedged_sell_signal(trade, position, latest, close, current_time, con
                     
             # CASE B: Offset-based Hedge (H-M100 / H-M200)
             elif h_type in ["H-M100", "H-M200"]:
-                hedge_result = _find_offset_hedge_with_retry(
+                signal = "SELL"
+                result = _find_main_withhedge_with_retry(
                     signal="SELL",
                     close=close,
                     instruments_df=instruments_df,
@@ -1221,11 +1243,12 @@ def _handle_hedged_sell_signal(trade, position, latest, close, current_time, con
                     expiry=expiry,
                     h_offset=h_offset
                 )
-
+                hedge_opt_symbol = result[4]
+                hedge_strike = strike + ((200 if config.get('HEDGE_TYPE') is "H-M200" else 100) * (-1 if signal is"BUY" else 1))
         # 3. VALIDATION & ERROR HANDLING
         if _handle_hedged_option_search_failure(
             result=result,
-            hedge_result=hedge_result,
+            hedge_result = hedge_opt_symbol if hedge_result is None else hedge_result,
             h_required=h_required,
             signal="SELL",
             key=key,
@@ -1237,7 +1260,7 @@ def _handle_hedged_sell_signal(trade, position, latest, close, current_time, con
         else:
             # 4. EXECUTION
             opt_symbol, strike, expiry, ltp, _ = result
-            hedge_opt_symbol, hedge_strike, hedge_expiry, hedge_ltp, _ = hedge_result if hedge_result else (None, None, None, 0, None)
+            hedge_opt_symbol, hedge_strike, hedge_expiry, hedge_ltp, _ = hedge_result if hedge_result else (hedge_opt_symbol, hedge_strike, expiry, 0, None)
 
             temp_trade_symbols = {
                 "OptionSymbol": opt_symbol,

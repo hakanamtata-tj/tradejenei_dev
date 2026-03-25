@@ -19,8 +19,8 @@ def run_trade_genie(user):
     init_and_run(user)
 
 def run_script(script_name):
-    subprocess.run(['/home/harshilkhatri2808/uat/tradeJenie/venv/bin/python', script_name])
-    #subprocess.run(['python', script_name])
+    # subprocess.run(['/home/harshilkhatri2808/uat/tradeJenie/venv/bin/python', script_name])
+    subprocess.run(['python', script_name])
 
 if __name__ == "__main__":
     print("Starting the process...")
@@ -36,6 +36,9 @@ if __name__ == "__main__":
         if file_mtime == today:
             print(f"{INSTRUMENTS_FILE} is already updated today. Skipping updateInstrument.py.")
             skip_update = True
+    else:
+        run_script('updateinstrument.py')
+        skip_update = True
 
     if not skip_update:
         run_script('updateinstrument.py')
