@@ -1,14 +1,9 @@
 import time
 import subprocess
 import threading
-from commonFunction import is_today_holiday
 from config import INSTRUMENTS_FILE
-from kitelogin import do_login
-from tradeJenie import init_and_run
-from userdtls import get_all_active_user
 import os
 from datetime import datetime
-from commonFunction import init_db
 
 def run_user_login(user):
     print(f"Logging in user: {user['user']}")
@@ -24,24 +19,27 @@ def run_script(script_name):
 
 if __name__ == "__main__":
     print("Starting the process...")
+    if os.path.exists(INSTRUMENTS_FILE):
+        file_mtime = datetime.fromtimestamp(os.path.getmtime(INSTRUMENTS_FILE)).date()
+        today = datetime.now().date()
+        if file_mtime == today:
+            print(f"{INSTRUMENTS_FILE} is already updated today.")
+        else:
+            run_script('updateinstrument.py')
+    else:
+        print(f"{INSTRUMENTS_FILE} not found. Updating now...")
+        run_script('updateinstrument.py')
+
+    from commonFunction import is_today_holiday,init_db
+    from kitelogin import do_login
+    from tradeJenie import init_and_run
+    from userdtls import get_all_active_user
+
     if is_today_holiday():
         print("Today is a holiday. Exiting the process.")
         exit(0)
     
     skip_update = False
-
-    if os.path.exists(INSTRUMENTS_FILE):
-        file_mtime = datetime.fromtimestamp(os.path.getmtime(INSTRUMENTS_FILE)).date()
-        today = datetime.now().date()
-        if file_mtime == today:
-            print(f"{INSTRUMENTS_FILE} is already updated today. Skipping updateInstrument.py.")
-            skip_update = True
-    else:
-        run_script('updateinstrument.py')
-        skip_update = True
-
-    if not skip_update:
-        run_script('updateinstrument.py')
     
     if not os.path.exists('trading.db'):
         print("trading.db not found. Initializing database...")
