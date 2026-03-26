@@ -12,7 +12,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           # These must match your GitHub Secret names exactly
-          host: ${{ secrets.GCE_IPS }}
+          host: ${{ secrets.GCP_IPS }}
           username: ${{ secrets.GCE_USERNAME }}
           key: ${{ secrets.GCE_SSH_KEY }}
           script: |
