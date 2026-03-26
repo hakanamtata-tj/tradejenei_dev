@@ -1,27 +1,24 @@
-name: Deploy to 3 VMs
-
+name: Deploy to GCP VM
 on:
   push:
-    branches: [ "master" ] # Make sure this matches your branch name (main or master)
+    branches: [ master ] # Change this if your branch is different
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: SSH and Pull Code
+      - name: SSH and Deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
-          # These must match your GitHub Secret names exactly
-          host: ${{ secrets.GCP_IPS }}
-          username: ${{ secrets.GCE_USERNAME }}
-          key: ${{ secrets.GCE_SSH_KEY }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # 1. Go to your code folder on the VM
-            # REPLACE 'your-repo-folder' with your actual folder name
+            # This is the path you mentioned
             cd /home/harshilkhatri2808/gitdev
             
-            # 2. Pull the latest code
-            git pull origin main
+            # If your project is inside a subfolder, add 'cd your-repo-name'
+            git pull origin master
             
-            # 3. Optional: Restart your python script
-            # Example: pkill -f main.py || true && nohup python3 main.py &
+            # Add any build or restart commands here
+            # e.g., npm install && pm2 restart all
