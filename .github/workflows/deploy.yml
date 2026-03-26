@@ -2,7 +2,7 @@ name: Deploy to 3 VMs
 
 on:
   push:
-    branches: [ "master" ] # Runs every time you push to the 'main' branch
+    branches: [ "master" ] # Make sure this matches your branch name (main or master)
 
 jobs:
   deploy:
@@ -11,15 +11,17 @@ jobs:
       - name: SSH and Pull Code
         uses: appleboy/ssh-action@v1.0.3
         with:
+          # These must match your GitHub Secret names exactly
           host: ${{ secrets.GCE_IPS }}
           username: ${{ secrets.GCE_USERNAME }}
           key: ${{ secrets.GCE_SSH_KEY }}
           script: |
-            # 1. Go to your folder (Change 'your-folder-name' to your real folder)
-            cd /home/harshilkhatri2808/gitdev
+            # 1. Go to your code folder on the VM
+            # REPLACE 'your-repo-folder' with your actual folder name
+            cd /home/${{ secrets.GCE_USERNAME }}/gitdev
             
-            # 2. Pull the latest code from your public repo
+            # 2. Pull the latest code
             git pull origin main
             
-            # 3. Optional: Restart your script (Uncomment the line below if needed)
-            # python3 main.py &
+            # 3. Optional: Restart your python script
+            # Example: pkill -f main.py || true && nohup python3 main.py &
