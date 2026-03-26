@@ -1,0 +1,25 @@
+name: Deploy to 3 VMs
+
+on:
+  push:
+    branches: [ "main" ] # Runs every time you push to the 'main' branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and Pull Code
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.GCE_IPS }}
+          username: ${{ secrets.GCE_USERNAME }}
+          key: ${{ secrets.GCE_SSH_KEY }}
+          script: |
+            # 1. Go to your folder (Change 'your-folder-name' to your real folder)
+            cd /home/harshilkhatri2808/gitdev
+            
+            # 2. Pull the latest code from your public repo
+            git pull origin main
+            
+            # 3. Optional: Restart your script (Uncomment the line below if needed)
+            # python3 main.py &
