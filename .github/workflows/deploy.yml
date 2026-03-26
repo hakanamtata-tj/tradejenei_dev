@@ -18,7 +18,7 @@ jobs:
           script: |
             # 1. Go to your code folder on the VM
             # REPLACE 'your-repo-folder' with your actual folder name
-            cd /home/${{ secrets.GCE_USERNAME }}/gitdev
+            cd /home/harshilkhatri2808/gitdev
             
             # 2. Pull the latest code
             git pull origin main
