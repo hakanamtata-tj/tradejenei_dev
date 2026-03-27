@@ -1,8 +1,13 @@
 name: Deploy to GCP VM
-on:
-  push:
-    branches: [ master ] # Change this if your branch is different 
 
+
+# This will automatically push it
+# on:
+#   push:
+#     branches: [ master ] # Change this if your branch is different 
+# On Demand push
+on:
+  workflow_dispatch: # This enables the manual "Run workflow" button
 jobs:
   deploy:
     runs-on: ubuntu-latest
