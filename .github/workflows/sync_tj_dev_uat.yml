@@ -1,12 +1,17 @@
 name: Sync TJ Dev to UAT
 
-on:
-  push:
-    branches:
-      - master
-    paths:
-      - 'dev/**'
+# This will automatically push it
+# on:
+#   push:
+#     branches:
+#       - master
+#     paths:
+#       - 'dev/**'
 
+# On Demand push
+on:
+  workflow_dispatch: # This enables the manual "Run workflow" button
+  
 jobs:
   copy-dev-to-uat:
     runs-on: ubuntu-latest
