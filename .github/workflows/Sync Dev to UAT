@@ -1,4 +1,4 @@
-name: Sync Dev to UAT 
+name: Sync Folder Action
 
 on:
   push:
@@ -8,40 +8,28 @@ on:
       - 'dev/**'
 
 jobs:
-  copy-dev-to-uat:
+  copy-job:
     runs-on: ubuntu-latest
     permissions:
-      contents: write 
+      contents: write
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Fetches all history for all branches
 
-      - name: Force Copy dev to uat
+      - name: Sync Folders
         run: |
-          # 1. Force create the uat directory
           mkdir -p uat
-          
-          # 2. Copy everything from dev/ to uat/
-          # Use -v to see exactly what is being copied in the logs
-          cp -rv dev/* uat/
-          
-          # 3. Add a hidden file to ensure Git tracks the folder even if it's empty
+          cp -rf dev/* uat/
           touch uat/.gitkeep
-          
-      - name: Commit and Push changes
+
+      - name: Push Changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Force add the uat folder
-          git add -f uat/
-          
-          # Check if there are changes and push
-          if git diff --staged --quiet; then
-            echo "No changes detected in uat folder."
+          git add uat/
+          if [ -n "$(git status --porcelain uat/)" ]; then
+            git commit -m "Automated sync from dev to uat"
+            git push
           else
-            git commit -m "Sync: Forced copy from dev to uat"
-            git push origin master
+            echo "Nothing to change"
           fi
