@@ -1,4 +1,4 @@
-name: Sync Dev to UAT
+name: Sync Dev to UAT 
 
 on:
   push:
