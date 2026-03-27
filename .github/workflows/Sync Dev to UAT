@@ -1,42 +1,47 @@
-name: Sync Dev to UAT (Specific Repo Only)
+name: Sync Dev to UAT
 
 on:
   push:
     branches:
       - master
     paths:
-      - 'dev/**' # This "filters" the action so it ONLY runs if the 'dev' folder changes
+      - 'dev/**'
 
 jobs:
   copy-dev-to-uat:
-    # This ensures it only runs in the specific repository you want
-    if: github.repository == 'jaise-tj/jaise' 
     runs-on: ubuntu-latest
     permissions:
       contents: write 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetches all history for all branches
 
-      - name: Copy dev content to uat
+      - name: Force Copy dev to uat
         run: |
-          # 1. Create uat if missing
+          # 1. Force create the uat directory
           mkdir -p uat
           
-          # 2. Sync files (This only looks at the local 'dev' and 'uat' folders)
-          cp -rf dev/* uat/
+          # 2. Copy everything from dev/ to uat/
+          # Use -v to see exactly what is being copied in the logs
+          cp -rv dev/* uat/
+          
+          # 3. Add a hidden file to ensure Git tracks the folder even if it's empty
+          touch uat/.gitkeep
           
       - name: Commit and Push changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          git add uat/
+          # Force add the uat folder
+          git add -f uat/
           
-          # Only push if there are actual changes
-          if [ -n "$(git status --porcelain uat/)" ]; then
-            git commit -m "Sync: Copy contents from dev to uat"
-            git push
+          # Check if there are changes and push
+          if git diff --staged --quiet; then
+            echo "No changes detected in uat folder."
           else
-            echo "No changes detected."
+            git commit -m "Sync: Forced copy from dev to uat"
+            git push origin master
           fi
