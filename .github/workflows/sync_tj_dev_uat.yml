@@ -1,4 +1,4 @@
-name: Sync Folder Action
+name: Sync TJ Dev to UAT
 
 on:
   push:
@@ -8,28 +8,33 @@ on:
       - 'dev/**'
 
 jobs:
-  copy-job:
+  copy-dev-to-uat:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Sync Folders
+      - name: Copy and Force Sync
         run: |
           mkdir -p uat
-          cp -rf dev/* uat/
+          # Sync dev contents to uat (this replaces everything in uat with dev)
+          rsync -av --delete dev/ uat/
           touch uat/.gitkeep
-
-      - name: Push Changes
+          
+      - name: Commit and Push
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add uat/
+          
+          # Force add the uat folder in case it's being ignored
+          git add -A uat/
+          
+          # Only push if there are changes
           if [ -n "$(git status --porcelain uat/)" ]; then
-            git commit -m "Automated sync from dev to uat"
-            git push
+            git commit -m "Sync: dev/hi.txt updated to uat/hi.txt"
+            git push origin master
           else
-            echo "Nothing to change"
+            echo "No changes to sync."
           fi
